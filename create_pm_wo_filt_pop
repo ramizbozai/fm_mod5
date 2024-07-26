@@ -1,0 +1,12 @@
+WITH cte AS (
+    SELECT * FROM (
+
+select workorderid
+from pm_wo_facts_having_txns
+where amount_spent_material > 11 and amount_spent_material < 5000
+
+) AS t (WORKORDERID)
+)
+SELECT *
+INTO PM_WO_Filt_Pop
+FROM cte;

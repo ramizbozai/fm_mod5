@@ -1,0 +1,145 @@
+with
+
+-- transactions as (
+--     select
+--     workorderid,
+--     transactionamount,
+--     subledgertype
+
+--     from Fact_Transactions
+-- ),
+
+txn_base as (
+    select
+    distinct workorderid
+    
+    from fact_transactions
+),
+
+pm_workorders as (
+    select
+    workorderid,
+    wostatus,
+    wodesc,
+    woproject,
+    wotypedesc,
+    wodatecreated,
+    wocategorywithdesc,
+    propertyid as wopropertyid,
+    propertydescription as wopropertydescription,
+    wodatecompleted
+
+    from Dim_Workorders
+    where wocategory in ('PM', 'PM CODE', 'PM CONTRACT', 'PM UTILITY')
+    and wodatecreated >= '2014-01-01'
+),
+
+select_pm_wos_with_txns as (
+    select
+    pm_workorders.*
+
+    from pm_workorders
+    inner join txn_base
+        on pm_workorders.WorkorderID = txn_base.WorkOrderID
+),
+
+phase_info as (
+    select
+    workorderid,
+    count(wophaseid) as cnt_wo_phases
+
+    from Dim_WO_Phases
+    group by workorderid
+),
+
+po_info as (
+    select
+    workorderid,
+    count(ponumber) as cnt_pos
+
+    from all_po
+    group by workorderid
+),
+
+lineitem_info as (
+    select
+    workorderid,
+    count(polinenumber) as cnt_lines
+
+    from all_po
+    group by workorderid
+),
+
+txn_info as (
+    select
+    workorderid,
+    count(sourcetransactionid) as cnt_txns,
+    sum(case when subledgertype in ('Labor') then transactionamount else 0 end) as amount_spent_labor,
+    sum(case when subledgertype not in ('Labor') then transactionamount else 0 end) as amount_spent_material,
+
+    count(case when transactiontype in ('INVENTORY MATERIAL RELEASE TO WORK ORDER') then 1 else null end) as cnt_inv_releases,
+    sum(case when transactiontype in ('INVENTORY MATERIAL RELEASE TO WORK ORDER') and subledgertype in ('Material') then transactionamount else 0 end) as amount_material_inv_releases
+
+    from fact_transactions
+    group by workorderid
+),
+
+completion_stamps as (
+    select
+    workorderid,
+    max(maxlaborcompletedate) as max_labor_complete_date
+
+    from phaselaborcompletedates
+    group by workorderid
+),
+
+joined as (
+    select
+    select_pm_wos_with_txns.workorderid,
+    select_pm_wos_with_txns.wostatus,
+    select_pm_wos_with_txns.wodesc,
+    select_pm_wos_with_txns.woproject,
+    select_pm_wos_with_txns.wotypedesc,
+    select_pm_wos_with_txns.wodatecreated,
+    select_pm_wos_with_txns.wocategorywithdesc,
+    select_pm_wos_with_txns.wopropertyid,
+    select_pm_wos_with_txns.wopropertydescription,
+    select_pm_wos_with_txns.wodatecompleted,
+    phase_info.cnt_wo_phases,
+    po_info.cnt_pos,
+    lineitem_info.cnt_lines,
+    txn_info.cnt_txns,
+    txn_info.amount_spent_labor,
+    txn_info.amount_spent_material,
+    txn_info.cnt_inv_releases,
+    txn_info.amount_material_inv_releases,
+    completion_stamps.max_labor_complete_date
+
+    from select_pm_wos_with_txns
+    left join phase_info on select_pm_wos_with_txns.workorderid = phase_info.workorderid
+    left join po_info on select_pm_wos_with_txns.workorderid = po_info.workorderid
+    left join lineitem_info on select_pm_wos_with_txns.workorderid = lineitem_info.workorderid
+    left join txn_info on select_pm_wos_with_txns.workorderid = txn_info.workorderid
+    left join completion_stamps on select_pm_wos_with_txns.workorderid = completion_stamps.workorderid
+),
+
+final as (
+    select *
+    from joined
+)
+
+-- select count(distinct workorderid)
+-- from pm_workorders
+
+-- select *
+-- from final;
+
+select *
+into PM_WO_Facts_Having_Txns
+from final;
+
+
+
+-- drop table PM_WO_Facts_Having_Txns;
+
+

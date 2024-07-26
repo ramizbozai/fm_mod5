@@ -1,0 +1,100 @@
+with
+
+--These are the 48K WO pop we decided on
+wo_filt_pop as (
+    select 
+    workorderid
+
+    from PM_WO_Filt_Pop
+),
+
+txns_info as (
+    select
+    sourcetransactionid,
+    workorderid,
+    wophaseid,
+    transactiondate,
+    transactiontype,
+    transactionamount,
+    transactiondescription,
+    subledgertype
+
+    from fact_transactions
+),
+
+filt_txns_info as (
+    select 
+    txns_info.*
+
+    from txns_info
+    inner join wo_filt_pop
+        on txns_info.workorderid = wo_filt_pop.workorderid
+),
+
+wo_phase_info as (
+    select
+    workorderid,
+    wophaseid,
+    phdesc,
+    phshop,
+    phshopdesc,
+    phshopwithdesc
+
+    from dim_wo_phases
+),
+
+shop_info as (
+    select
+    shop,
+    division,
+    organization,
+    orgdescription,
+    shopzone,
+    shopzonedescription,
+    shopzonetype
+
+    from dim_shops
+),
+
+joined as (
+    select
+    filt_txns_info.sourcetransactionid,
+    filt_txns_info.workorderid,
+    filt_txns_info.wophaseid,
+    filt_txns_info.transactiondate,
+    filt_txns_info.transactiontype,
+    filt_txns_info.transactionamount,
+    filt_txns_info.transactiondescription,
+    filt_txns_info.subledgertype,
+
+    wo_phase_info.phdesc,
+    wo_phase_info.phshop,
+    wo_phase_info.phshopwithdesc,
+
+    shop_info.division,
+    shop_info.organization,
+    shop_info.orgdescription,
+    shop_info.shopzone,
+    shop_info.shopzonedescription,
+    shop_info.shopzonetype
+
+    
+    from filt_txns_info
+    left join wo_phase_info
+        on filt_txns_info.workorderid = wo_phase_info.workorderid
+        and filt_txns_info.wophaseid = wo_phase_info.wophaseid
+
+    left join shop_info
+        on wo_phase_info.phshop = shop_info.shop
+),
+
+final as (
+    select *
+    from joined
+)
+
+select *
+into PM_TXN_FILT
+from final;
+
+

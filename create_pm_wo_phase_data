@@ -1,0 +1,107 @@
+--Maybe start with fact transactions because it has alot already
+
+--1. Actual amount spent
+--2. Budget amount?
+
+--Subledgertype
+-- = material == not time paid
+-- = labor == timecards
+
+--Amounts:
+--dim workorders -> woactualcostmaterial, woactualcostequipment
+--fact_transactions -> transactionamount (actual spent)
+---at the workorder, and phase level
+
+with 
+
+transactions as (
+    select
+    sourcetransactionid as txn_id,
+    propertyname as transaction_property_name,
+    workorderid as workorder_id,
+    wodescription,
+    wophaseid as wo_phase_id,
+    transactiondate as transaction_date,
+    workdate as work_date,
+    transactionamount,
+    subledgertype
+
+    from Fact_Transactions
+),
+
+pm_workorders as (
+    select
+    workorderid,
+    wodesc,
+    woproject,
+    wodatecreated,
+    propertydescription as wopropertydescription,
+    wodatecompleted
+
+    from Dim_Workorders
+    where wocategory in ('PM', 'PM CODE', 'PM CONTRACT', 'PM UTILITY')
+    and wodatecreated > '2014-01-01'
+),
+
+workorder_phases as (
+    select
+    workorderid as phase_workorderid,
+    wophaseid,
+    phdesc,
+    phassetgroup as asset_group,
+    asset_lookup_all.asset_group_description
+
+    from dim_wo_phases
+    left join asset_lookup_all
+        on dim_wo_phases.phassetgroup = asset_lookup_all.asset_group
+),
+
+joined as (
+    select
+    transactions.*,
+
+    pm_workorders.wodesc,
+    pm_workorders.woproject,
+    pm_workorders.wodatecreated,
+    pm_workorders.wopropertydescription,
+    pm_workorders.wodatecompleted,
+
+    workorder_phases.wophaseid,
+    workorder_phases.phdesc,
+    workorder_phases.asset_group,
+    workorder_phases.asset_group_description
+
+    from transactions
+    inner join pm_workorders
+        on transactions.workorder_id = pm_workorders.workorderid
+    inner join workorder_phases
+        on transactions.workorder_id = workorder_phases.phase_workorderid
+        and transactions.wo_phase_id = workorder_phases.wophaseid
+),
+
+pivoted as (
+    select
+    workorder_id,
+    wodescription as wo_description,
+    --work_date,
+    wodatecreated as wo_date_created,
+    wodatecompleted as wo_date_completed,
+    wopropertydescription as wo_property_description,
+    wophaseid as wo_phase_id,
+    phdesc as ph_desc,
+    asset_group_description as ph_asset_group_description,
+    sum(case when subledgertype in ('Labor') then transactionamount else 0 end) as amount_spent_labor,
+    sum(case when subledgertype not in ('Labor') then transactionamount else 0 end) as amount_spent_material
+
+    from joined
+    group by workorder_id, wodescription, wodatecreated, wodatecompleted, wopropertydescription, wophaseid, phdesc, asset_group_description
+),
+
+final as (
+    select *
+    from pivoted
+)
+
+select *
+into PM_WO_Phase_Data
+from final;
