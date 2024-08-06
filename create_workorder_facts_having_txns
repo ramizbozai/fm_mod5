@@ -1,14 +1,5 @@
 with
 
--- transactions as (
---     select
---     workorderid,
---     transactionamount,
---     subledgertype
-
---     from Fact_Transactions
--- ),
-
 txn_base as (
     select
     distinct workorderid
@@ -128,18 +119,9 @@ final as (
     from joined
 )
 
--- select count(distinct workorderid)
--- from pm_workorders
-
--- select *
--- from final;
-
 select *
 into PM_WO_Facts_Having_Txns
 from final;
 
-
-
--- drop table PM_WO_Facts_Having_Txns;
 
 
