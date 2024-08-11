@@ -1,4 +1,5 @@
-![alt text]([http://url/to/img.png](https://fs.fm.virginia.edu/adfs/portal/logo/logo.png))
+![image](https://github.com/user-attachments/assets/730b6ec9-893d-4ef3-a965-ea6340085769)
+
 
 **Summary:** The SQL scripts helped prepare and shape data to be used in the 3 python notebooks that drove the value-add sections of our presentation to UVA Facilities Management.  At its core, the work presented here demonstrates the value that can be extracted from mining free-text data like workorder and transaction descriptions to "manufacturer" unique categories to predict spend and ultimately drive cost savings.
 
