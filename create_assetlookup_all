@@ -16,19 +16,7 @@ ordered as (
     from unioned
 )
 
--- select *
--- from ordered
-
-
--- select
--- asset_group,
--- count(*) as cnt
--- from unioned
--- group by asset_group
--- order by cnt desc
-
 select *
 into Asset_Lookup_All
 from ordered
 where rankasset = 1
---where asset_group = 'C1025-110'
