@@ -1,17 +1,3 @@
---Maybe start with fact transactions because it has alot already
-
---1. Actual amount spent
---2. Budget amount?
-
---Subledgertype
--- = material == not time paid
--- = labor == timecards
-
---Amounts:
---dim workorders -> woactualcostmaterial, woactualcostequipment
---fact_transactions -> transactionamount (actual spent)
----at the workorder, and phase level
-
 with 
 
 transactions as (
