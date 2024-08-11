@@ -1,5 +1,7 @@
 ### This readme serves as a guide for the scripts contained in this repo. ###
 
+The SQL scripts helped prepare and shape data to be used in the 3 python notebooks that drove the value-add sections of our presentation to UVA Facilities Management.  At its core, the work presented here demonstrates the value that can be extracted from mining free-text data like workorder and transaction descriptions to "manufacturer" unique categories to predict spend and ultimately drive cost savings.
+
 #### SQL/Feature engineering code: ####
 
 **1. Create workorder facts having txns:** For creating the population of workorders with a 'PM' WO Category that were created on or after Jan 1, 2014. In addition, the "facts" are additional variables that we used in model training.  
